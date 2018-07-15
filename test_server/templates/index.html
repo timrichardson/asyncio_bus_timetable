@@ -1,0 +1,29 @@
+
+
+
+{% extends "base.html" %}
+
+{% set title = "Bus Arrivals" %}
+
+{% block content %}
+
+    <div id="arrivals"></div>
+
+    <div class="alert alert-info" id="last_updated"></div>
+    <div id="log"
+     style="width:20em;height:15em;overflow:auto;border:1px solid black">
+
+</div>
+
+
+    <div>
+  <button id="connect">Connect</button>&nbsp;|&nbsp;Status:
+  <span id="status">disconnected</span>
+</div>
+
+<script src="{{ url('static', filename='js/websocket_index.js') }}"></script>
+
+
+{% endblock %}
+
+
