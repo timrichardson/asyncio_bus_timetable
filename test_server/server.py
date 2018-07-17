@@ -124,9 +124,9 @@ def one_time_put_message_in_queue():
 
 def format_next_bus_message()->dict():
     para_departures = next_buses("Para")
-    para_departures_str = [dt.strftime("%H-%M") for dt in para_departures]
+    para_departures_str = [dt.strftime("%H:%M") for dt in para_departures]
     lawson_departures = next_buses("Lawson")
-    lawson_departures_str = [dt.strftime("%H-%M") for dt in lawson_departures]
+    lawson_departures_str = [dt.strftime("%H:%M") for dt in lawson_departures]
     return json.dumps({'Para':para_departures_str,'Lawson':lawson_departures_str})
 
 
