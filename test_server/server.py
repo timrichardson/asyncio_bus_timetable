@@ -10,7 +10,11 @@ from aiohttp import WSCloseCode
 import janus
 from timetable_logic import next_buses
 import json
-from datetime import datetime
+import logging
+
+# debug level, can be debug, error, info, ...
+loglevel = "info"
+log = logging.getLogger()
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8080))
@@ -24,6 +28,15 @@ However, I pass app as a parameter to functions even though it is a global, whic
 loop = asyncio.get_event_loop()
 app = aiohttp.web.Application(loop=loop) #type: aiohttp.web.Application
 app['websockets'] = []
+
+
+def init_logging(conf=None):
+    log_level_conf = "warning"
+    if "loglevel" in conf:
+        log_level_conf = conf['loglevel']
+    numeric_level = getattr(logging, log_level_conf.upper(), None)
+    logging.basicConfig(level=numeric_level, format='%(message)s')
+    log.error("Logging level: {}".format(log_level_conf))
 
 
 def setup_static_routes(app):
@@ -71,7 +84,7 @@ async def websocket_handler(request):
 
 async def send_websocket_messages():
     """ runs in the background and sends messages to all clients.
-    This is asyncio code; in this app, we send messages from a queue populated by non-async code"""
+    This is asyncio code; in this app, we send messages from a queue populated by non-async code using janus"""
     try:
         while True:
             await asyncio.sleep(60)
@@ -125,6 +138,7 @@ def one_time_put_message_in_queue():
 def format_next_bus_message()->dict():
     para_departures = next_buses("Para")
     para_departures_str = [dt.strftime("%H:%M") for dt in para_departures]
+    time.sleep(1)
     lawson_departures = next_buses("Lawson")
     lawson_departures_str = [dt.strftime("%H:%M") for dt in lawson_departures]
     return json.dumps({'Para':para_departures_str,'Lawson':lawson_departures_str})
