@@ -3,6 +3,7 @@ from timetable_logic import ptv_api_settings
 from datetime import datetime,timezone,timedelta
 from typing import List
 from dateutil.parser import parse
+import os
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -28,6 +29,7 @@ def filter_departures(get_departure_json:dict,start_time:datetime=None)->List[da
 
 
 def next_buses(stop_name:str)->List[datetime]:
+    os.sleep(1)
     client = create_api()
     json = client.get_departure_from_stop(RouteType.BUS, ptv_api_settings.stops[stop_name],
                                           include_cancelled=False,)
