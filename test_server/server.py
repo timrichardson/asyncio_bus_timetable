@@ -11,9 +11,10 @@ import janus
 from timetable_logic import next_buses
 import json
 import logging
+import datetime
 
 # debug level, can be debug, error, info, ...
-loglevel = "info"
+loglevel = "debug"
 log = logging.getLogger()
 
 HOST = os.getenv('HOST', '0.0.0.0')
@@ -31,8 +32,8 @@ app['websockets'] = []
 
 
 def init_logging(conf=None):
-    log_level_conf = "warning"
-    if "loglevel" in conf:
+    log_level_conf = "debug"
+    if conf and "loglevel" in conf:
         log_level_conf = conf['loglevel']
     numeric_level = getattr(logging, log_level_conf.upper(), None)
     logging.basicConfig(level=numeric_level, format='%(message)s')
@@ -51,7 +52,7 @@ async def homepage_handler(request):
 
 
 async def websocket_handler(request):
-    # this is a consumer, it reacts to messages from the client
+    # this is a consumer, it reacts to websocket connections
     #print('Websocket connection starting')
     ws = aiohttp.web.WebSocketResponse()
     await ws.prepare(request)
@@ -104,9 +105,11 @@ async def send_websocket_messages_from_queue():
     try:
         while True:
             item = await app['message_queue'].async_q.get()
+            if len (app['websockets']) == 0:
+                log.debug(f"{datetime.datetime.now}: there is message to send but no clients")
             for subscriber in app['websockets']:
                 await subscriber.send_str(item) #assume is it json.dumps already
-                #print ("sent message from queue")
+                log.info (f"{datetime.datetime.now}: sent message from queue ")
     except asyncio.CancelledError:
         pass
     finally:
@@ -120,12 +123,13 @@ def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threa
     while True:
         wakeup_event.clear()
         if kill_event.is_set():
-            print("Killing the blocking task")
+            log.info("Killing the blocking task")
             return
-        print("in blocking background task")
+        log.info(f"{datetime.datetime.now}: update bus data in blocking background task")
         msg = format_next_bus_message()
         app['message_queue'].sync_q.put(msg)
-        print("put in queue")
+        log.info(f"{datetime.datetime.now}: put updated bus data in janus queue")
+
         wakeup_event.wait(60)
 
 
@@ -135,7 +139,7 @@ def one_time_put_message_in_queue():
     print("one time put messaage in queue")
 
 
-def format_next_bus_message()->dict():
+def format_next_bus_message()->dict:
     para_departures = next_buses("Para")
     para_departures_str = [dt.strftime("%H:%M") for dt in para_departures]
     time.sleep(1)
@@ -145,7 +149,7 @@ def format_next_bus_message()->dict():
 
 
 async def start_background_tasks(app): #no await in here
-    app['send_messages'] = app.loop.create_task(send_websocket_messages())
+    #app['send_messages'] = app.loop.create_task(send_websocket_messages())
     app['send_messages_from_queue'] = app.loop.create_task(send_websocket_messages_from_queue())
 
     kill_event = threading.Event()
@@ -176,7 +180,7 @@ async def on_shutdown(app):
 
 
 def main():
-
+    init_logging()
     setup_static_routes(app=app)
     aiohttp_jinja2.setup(
         app, loader=jinja2.PackageLoader('test_server', 'templates')) #see also FilesSstemLoader
