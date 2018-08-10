@@ -106,10 +106,10 @@ async def send_websocket_messages_from_queue():
         while True:
             item = await app['message_queue'].async_q.get()
             if len (app['websockets']) == 0:
-                log.debug(f"{datetime.datetime.now}: there is message to send but no clients")
+                log.debug(f"{datetime.datetime.now()}: there is message to send but no clients")
             for subscriber in app['websockets']:
                 await subscriber.send_str(item) #assume is it json.dumps already
-                log.info (f"{datetime.datetime.now}: sent message from queue ")
+                log.info (f"{datetime.datetime.now()}: sent message from queue ")
     except asyncio.CancelledError:
         pass
     finally:
@@ -125,10 +125,10 @@ def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threa
         if kill_event.is_set():
             log.info("Killing the blocking task")
             return
-        log.info(f"{datetime.datetime.now}: update bus data in blocking background task")
+        log.info(f"{datetime.datetime.now()}: update bus data in blocking background task")
         msg = format_next_bus_message()
         app['message_queue'].sync_q.put(msg)
-        log.info(f"{datetime.datetime.now}: put updated bus data in janus queue")
+        log.info(f"{datetime.datetime.now()}: put updated bus data in janus queue")
 
         wakeup_event.wait(60)
 
