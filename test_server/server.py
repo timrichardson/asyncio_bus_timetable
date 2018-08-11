@@ -127,9 +127,9 @@ def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threa
             return
         log.info(f"{datetime.datetime.now()}: update bus data in blocking background task")
         msg = format_next_bus_message(ptv_client=app.ptv_client)
+        log.debug(f"{datetime.datetime.now()}: putting updated bus data in janus queue")
         app['message_queue'].sync_q.put(msg)
-        log.info(f"{datetime.datetime.now()}: put updated bus data in janus queue")
-
+        log.debug(f"{datetime.datetime.now()}: put updated bus data in janus queue")
         wakeup_event.wait(60)
 
 
