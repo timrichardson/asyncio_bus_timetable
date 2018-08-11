@@ -3,12 +3,18 @@ from timetable_logic import ptv_api_settings
 from datetime import datetime,timezone,timedelta
 from typing import List
 from dateutil.parser import parse
+from concurrent.futures import ThreadPoolExecutor,TimeoutError
 import time
+import logging
+log = logging.getLogger()
+
+executor = ThreadPoolExecutor(max_workers=2)
+
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
 
-def create_api()->PTVClient:
+def create_ptv_api()->PTVClient:
     return PTVClient(dev_id=ptv_api_settings.ptv_userid,
                      api_key=ptv_api_settings.ptv_key)
 
@@ -28,18 +34,33 @@ def filter_departures(get_departure_json:dict,start_time:datetime=None)->List[da
 
 
 
-def next_buses(stop_name:str)->List[datetime]:
-    client = create_api()
-    json = client.get_departure_from_stop(RouteType.BUS, ptv_api_settings.stops[stop_name],
+def next_buses(ptv_client,stop_name:str)->List[datetime]:
+
+    def local_get_departure_from_stop():
+        return ptv_client.get_departure_from_stop(RouteType.BUS, ptv_api_settings.stops[stop_name],
                                           include_cancelled=False,)
 
-    dept_list = filter_departures(get_departure_json=json)
-    return dept_list
+    log.info(f"{datetime.now()}: submitting future")
+    future_req = executor.submit(local_get_departure_from_stop)
+    try:
+        json = future_req.result(timeout=10)
+        dept_list = filter_departures(get_departure_json=json)
+        return dept_list
+    except TimeoutError:
+        json = None
+        log.error(f"{datetime.now()}: timeout when fetching API data from PTV")
+        return []
+
+    # json = client.get_departure_from_stop(RouteType.BUS, ptv_api_settings.stops[stop_name],
+    #                                       include_cancelled=False,)
+
+
 
 
 
 if __name__ == '__main__':
-    client = create_api()
-    departures_lawson = next_buses(stop_name='Lawson')
-    departures_para = next_buses(stop_name='Para')
+    client = create_ptv_api()
+    departures_lawson = next_buses(ptv_client=client,stop_name='Lawson')
+    departures_para = next_buses(ptv_client=client,stop_name='Para')
     print (departures_lawson,departures_para)
+    executor.shutdown()

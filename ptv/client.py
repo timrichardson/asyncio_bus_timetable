@@ -59,7 +59,7 @@ class PTVClient(object):
         params["devid"] = self.dev_id
         query = "?" + urllib.parse.urlencode(params,doseq=True)
         url = BASE_URL + path + query + '&signature=' + self._computeSignature(path + query)
-        response = requests.get(url,timeout=5)
+        response = requests.get(url)
         response.raise_for_status()
         return response.json()
 

@@ -8,7 +8,7 @@ import aiohttp.web
 import threading
 from aiohttp import WSCloseCode
 import janus
-from timetable_logic import next_buses
+from timetable_logic import next_buses,create_ptv_api
 import json
 import logging
 import datetime
@@ -126,7 +126,7 @@ def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threa
             log.info("Killing the blocking task")
             return
         log.info(f"{datetime.datetime.now()}: update bus data in blocking background task")
-        msg = format_next_bus_message()
+        msg = format_next_bus_message(ptv_client=app.ptv_client)
         app['message_queue'].sync_q.put(msg)
         log.info(f"{datetime.datetime.now()}: put updated bus data in janus queue")
 
@@ -139,11 +139,11 @@ def one_time_put_message_in_queue():
     print("one time put messaage in queue")
 
 
-def format_next_bus_message()->dict:
-    para_departures = next_buses("Para")
+def format_next_bus_message(ptv_client)->dict:
+    para_departures = next_buses(ptv_client=ptv_client,stop_name="Para")
     para_departures_str = [dt.strftime("%H:%M") for dt in para_departures]
     time.sleep(1)
-    lawson_departures = next_buses("Lawson")
+    lawson_departures = next_buses(ptv_client=ptv_client,stop_name="Lawson")
     lawson_departures_str = [dt.strftime("%H:%M") for dt in lawson_departures]
     return json.dumps({'Para':para_departures_str,'Lawson':lawson_departures_str})
 
@@ -184,6 +184,7 @@ def main():
     setup_static_routes(app=app)
     aiohttp_jinja2.setup(
         app, loader=jinja2.PackageLoader('test_server', 'templates')) #see also FilesSstemLoader
+    app.ptv_client = create_ptv_api()
     app.router.add_route('GET', '/', homepage_handler)
     app.router.add_route('GET', '/ws', websocket_handler)
     app['message_queue'] = janus.Queue(loop=loop) #janus is a sync/async queue
