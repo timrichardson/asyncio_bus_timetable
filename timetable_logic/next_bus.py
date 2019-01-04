@@ -6,10 +6,10 @@ from dateutil.parser import parse
 from concurrent.futures import ThreadPoolExecutor,TimeoutError
 import time
 import logging
-log = logging.getLogger()
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
-executor = ThreadPoolExecutor(max_workers=2)
-
+executor = ThreadPoolExecutor(max_workers=1)
 
 def utc_to_local(utc_dt):
     return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
@@ -44,6 +44,7 @@ def next_buses(ptv_client,stop_name:str)->List[datetime]:
     future_req = executor.submit(local_get_departure_from_stop)
     try:
         json = future_req.result(timeout=10)
+        log.info(f"{datetime.now()}: future succeeded")
         dept_list = filter_departures(get_departure_json=json)
         return dept_list
     except TimeoutError:

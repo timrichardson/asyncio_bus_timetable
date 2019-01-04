@@ -15,7 +15,8 @@ import datetime
 
 # debug level, can be debug, error, info, ...
 loglevel = "debug"
-log = logging.getLogger()
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8080))
@@ -36,7 +37,7 @@ def init_logging(conf=None):
     if conf and "loglevel" in conf:
         log_level_conf = conf['loglevel']
     numeric_level = getattr(logging, log_level_conf.upper(), None)
-    logging.basicConfig(level=numeric_level, format='%(message)s')
+    logging.basicConfig(filename="timetable.log",level=numeric_level, format='%(message)s')
     log.error("Logging level: {}".format(log_level_conf))
 
 
@@ -140,6 +141,7 @@ def one_time_put_message_in_queue():
 
 
 def format_next_bus_message(ptv_client)->dict:
+    #call bus API
     para_departures = next_buses(ptv_client=ptv_client,stop_name="Para")
     para_departures_str = [dt.strftime("%H:%M") for dt in para_departures]
     time.sleep(1)
