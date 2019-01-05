@@ -126,7 +126,8 @@ def server_watchdog(app:aiohttp.web.Application, watchdog_event:threading.Event)
        #result is False if the timeout activated
        if not result:
            log.warning("Watchdog timeout was triggered")
-
+       else:
+           watchdog_event.clear()
 
 
 def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threading.Event,
@@ -175,8 +176,7 @@ async def start_background_tasks(app): #no await in here
     app['send_blocking_messages_kill_event'] = kill_event #used to send a signal to kill on shutdown
     app['send_blocking_messages_wakeup_event'] = wakeup_event  # used to send a signal to kill
     app['server_watchdog_event'] = watchdog_event  # a signal to kill the server (letting supervisord restart) if it gets stuck
-    app['server_watchdog'] = app.loop.run_in_executor(None, server_watchdog, app,
-                                                             watchdog_event)
+    # app['server_watchdog'] = app.loop.run_in_executor(None, server_watchdog, app, watchdog_event)
 
 async def cleanup_background_tasks(app):
     #app is passed by the library
