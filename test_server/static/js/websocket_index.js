@@ -19,6 +19,7 @@ $(function () {
             log('Connected.');
             if (g_reconnectInterval)
                 {clearInterval(g_reconnectInterval);
+                g_reconnectInterval = null;
                 }
             update_ui();
         };
