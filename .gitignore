@@ -221,3 +221,4 @@ venv/lib/python3.6/site-packages/wheel/signatures/__pycache__/
 venv/lib/python3.6/site-packages/wheel/tool/__pycache__/
 venv/lib/python3.6/site-packages/yarl/__pycache__/
 !/test_server/server.py
+/.idea/

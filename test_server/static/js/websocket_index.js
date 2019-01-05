@@ -2,6 +2,7 @@
 // This invokes this code when the page is ready
 $(function () {
     var conn = null;
+    var g_reconnectInterval = null;
 
     function log(msg) {
         var control = $('#log');
@@ -16,6 +17,9 @@ $(function () {
         log('Connecting...');
         conn.onopen = function () {
             log('Connected.');
+            if (g_reconnectInterval)
+                {clearInterval(g_reconnectInterval);
+                }
             update_ui();
         };
         conn.onmessage = function (e) {
@@ -25,18 +29,22 @@ $(function () {
             update_last_updated();
         };
         conn.onclose = function () {
-            log('Disconnected.');
+            log('Disconnected. Will try reconnecting every 60 seconds');
             conn = null;
+            g_reconnectInterval = setInterval(connect,1000*60);
             update_ui();
         };
     }
 
+
     function disconnect() {
         if (conn != null) {
-            log('Disconnecting...');
-            conn.close();
+
+            conn.close(); // this call onclose and a reconnect Interval exists
             conn = null;
+
             update_ui();
+
         }
     }
 
