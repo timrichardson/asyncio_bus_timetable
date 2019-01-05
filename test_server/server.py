@@ -118,11 +118,25 @@ async def send_websocket_messages_from_queue():
 
 
 
-def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threading.Event,wakeup_event:threading.Event):
-    """ Uses a janus queue to put messages into a queue that an async function will fetch and process
+def server_watchdog(app:aiohttp.web.Application, watchdog_event:threading.Event):
+   # wait for watchdog_events, but timeout after x seconds
+   # the watchdog event is set in blocking_put_message_in_queue
+   while True:
+       result = watchdog_event.wait(500)
+       #result is False if the timeout activated
+       if not result:
+           log.warning("Watchdog timeout was triggered")
+
+
+
+def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threading.Event,
+                                   wakeup_event:threading.Event,
+                                   watchdog_event:threading.Event):
+    """ Run as a background task in the async loop. Uses a janus queue to put messages into a queue that an async function will fetch and process
     this will fetch timetable info and put into int"""
     while True:
         wakeup_event.clear()
+        watchdog_event.set() #I'm alive
         if kill_event.is_set():
             log.info("Killing the blocking task")
             return
@@ -153,13 +167,16 @@ def format_next_bus_message(ptv_client)->dict:
 async def start_background_tasks(app): #no await in here
     #app['send_messages'] = app.loop.create_task(send_websocket_messages())
     app['send_messages_from_queue'] = app.loop.create_task(send_websocket_messages_from_queue())
-
     kill_event = threading.Event()
     wakeup_event = threading.Event()
-    app['send_blocking_messages'] = app.loop.run_in_executor(None, blocking_put_messages_in_queue, app, kill_event,wakeup_event)
-    app['send_blocking_messages_kill_event'] = kill_event #used to send a signal to kill
+    watchdog_event = threading.Event()
+    app['send_blocking_messages'] = app.loop.run_in_executor(None, blocking_put_messages_in_queue, app,
+                                                             kill_event, wakeup_event, watchdog_event)
+    app['send_blocking_messages_kill_event'] = kill_event #used to send a signal to kill on shutdown
     app['send_blocking_messages_wakeup_event'] = wakeup_event  # used to send a signal to kill
-
+    app['server_watchdog_event'] = watchdog_event  # a signal to kill the server (letting supervisord restart) if it gets stuck
+    app['server_watchdog'] = app.loop.run_in_executor(None, server_watchdog, app,
+                                                             watchdog_event)
 
 async def cleanup_background_tasks(app):
     #app is passed by the library
