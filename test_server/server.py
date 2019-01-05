@@ -12,6 +12,7 @@ from timetable_logic import next_buses,create_ptv_api
 import json
 import logging
 import datetime
+import sys
 
 # debug level, can be debug, error, info, ...
 loglevel = "debug"
@@ -126,6 +127,7 @@ def server_watchdog(app:aiohttp.web.Application, watchdog_event:threading.Event)
        #result is False if the timeout activated
        if not result:
            log.warning("Watchdog timeout was triggered")
+           sys.exit([1])
        else:
            watchdog_event.clear()
 
