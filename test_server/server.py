@@ -15,7 +15,6 @@ import datetime
 import sys
 
 # debug level, can be debug, error, info, ...
-loglevel = "info"
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
@@ -34,7 +33,7 @@ app['websockets'] = []
 
 
 def init_logging(conf=None):
-    log_level_conf = "debug"
+    log_level_conf = "info"
     if conf and "loglevel" in conf:
         log_level_conf = conf['loglevel']
     numeric_level = getattr(logging, log_level_conf.upper(), None)
@@ -176,6 +175,7 @@ async def start_background_tasks(app): #no await in here
     watchdog_event = threading.Event()
     app['send_blocking_messages'] = app.loop.run_in_executor(None, blocking_put_messages_in_queue, app,
                                                              kill_event, wakeup_event, watchdog_event)
+    app['watchdog_in_background'] = app.loop.run_in_executor(None, server_watchdog, app, watchdog_event)
     app['send_blocking_messages_kill_event'] = kill_event #used to send a signal to kill on shutdown
     app['send_blocking_messages_wakeup_event'] = wakeup_event  # used to send a signal to kill
     app['server_watchdog_event'] = watchdog_event  # a signal to kill the server (letting supervisord restart) if it gets stuck
