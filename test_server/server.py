@@ -15,9 +15,9 @@ import datetime
 import sys
 
 # debug level, can be debug, error, info, ...
-loglevel = "debug"
+loglevel = "info"
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', 8080))
@@ -129,6 +129,7 @@ def server_watchdog(app:aiohttp.web.Application, watchdog_event:threading.Event)
            log.warning("Watchdog timeout was triggered")
            sys.exit([1])
        else:
+           log.info("Watchdog going back to sleep")
            watchdog_event.clear()
 
 
@@ -145,9 +146,9 @@ def blocking_put_messages_in_queue(app:aiohttp.web.Application, kill_event:threa
             return
         log.info(f"{datetime.datetime.now()}: update bus data in blocking background task")
         msg = format_next_bus_message(ptv_client=app.ptv_client)
-        log.debug(f"{datetime.datetime.now()}: putting updated bus data in janus queue")
+        log.info(f"{datetime.datetime.now()}: putting updated bus data in janus queue")
         app['message_queue'].sync_q.put(msg)
-        log.debug(f"{datetime.datetime.now()}: put updated bus data in janus queue")
+        log.info(f"{datetime.datetime.now()}: put updated bus data in janus queue")
         wakeup_event.wait(60)
 
 
