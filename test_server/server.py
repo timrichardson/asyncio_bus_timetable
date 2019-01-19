@@ -126,7 +126,8 @@ def server_watchdog(app:aiohttp.web.Application, watchdog_event:threading.Event)
        #result is False if the timeout activated
        if not result:
            log.warning("Watchdog timeout was triggered")
-           sys.exit([1])
+           #sys.exit([1]) #this only exits the thread!
+           os._exit(1)
        else:
            log.info("Watchdog going back to sleep")
            watchdog_event.clear()
